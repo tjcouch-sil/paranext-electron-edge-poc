@@ -1,79 +1,40 @@
-const path = require('path');
-var version = location.search.split('version=')[1];
-var namespace = 'QuickStart.' + version.charAt(0).toUpperCase() + version.substr(1);
-if(version === 'core') version = 'coreapp';
+// const cSharp = require('./cSharp.js');
+/**
+ * Calls electron to invoke an edge method
+ * @param {string} classMethod Class name and method to call in dot notation like ClassName.Method
+ * @param  {...any} args arguments to pass into the method
+ * @returns Promise that resolves with the return from the called method
+ */
+async function invoke(classMethod, ...args) {
+    return args
+      ? window.electronAPI.edge.invoke(classMethod, ...args)
+      : window.electronAPI.edge.invoke(classMethod);
+}
 
-const baseNetAppPath = path.join(__dirname, '/src/'+ namespace +'/bin/Debug/net'+ version +'3.1');
+const cSharp = { invoke };
 
-process.env.EDGE_USE_CORECLR = 1;
-if(version !== 'standard')
-    process.env.EDGE_APP_ROOT = baseNetAppPath;
-
-var edge = require('electron-edge-js');
-
-var baseDll = path.join(baseNetAppPath, namespace + '.dll');
-
-var localTypeName = namespace + '.LocalMethods';
-var externalTypeName = namespace + '.ExternalMethods';
-
-var getAppDomainDirectory = edge.func({
-    assemblyFile: baseDll,
-    typeName: localTypeName,
-    methodName: 'GetAppDomainDirectory'
-});
-
-var getCurrentTime = edge.func({
-    assemblyFile: baseDll,
-    typeName: localTypeName,
-    methodName: 'GetCurrentTime'
-});
-
-var useDynamicInput = edge.func({
-    assemblyFile: baseDll,
-    typeName: localTypeName,
-    methodName: 'UseDynamicInput'
-});
-
-var getPerson = edge.func({
-    assemblyFile: baseDll,
-    typeName: externalTypeName,
-    methodName: 'GetPersonInfo'
-});
-
-var handleException = edge.func({
-    assemblyFile: baseDll,
-    typeName: localTypeName,
-    methodName: 'ThrowException'
-});
-
+console.log('stuff')
 
 window.onload = function() {
-
-    getAppDomainDirectory('', function(error, result) {
-        if (error) throw error;
+    cSharp.invoke('LocalMethods.GetAppDomainDirectory').then(result => {
         document.getElementById("GetAppDomainDirectory").innerHTML = result;
-    });
+    }).catch(error => { throw error; });
 
-    getCurrentTime('', function(error, result) {
-        if (error) throw error;
+    cSharp.invoke('LocalMethods.GetCurrentTime').then(result => {
         document.getElementById("GetCurrentTime").innerHTML = result;
-    });
+    }).catch(error => { throw error; });
 
-    useDynamicInput('Node.Js', function(error, result) {
-        if (error) throw error;
+    cSharp.invoke('LocalMethods.UseDynamicInput', 'Node.Js').then(result => {
         document.getElementById("UseDynamicInput").innerHTML = result;
+    }).catch(error => { throw error; });
+    
+    cSharp.invoke('LocalMethods.HandleException').then(result => {
+        throw Error(`HandleException did not throw an exception! result: ${result}`);
+    }).catch(error => {
+        document.getElementById("HandleException").innerHTML = error.Message;
     });
-    try{
-        handleException('', function(error, result) {
-        });
 
-    }catch(e){
-        document.getElementById("HandleException").innerHTML = e.Message;
-    }
-
-    getPerson('', function(error, result) {
-        //if (error) throw JSON.stringify(error);
+    cSharp.invoke('LocalMethods.GetPersonInfo').then(result => {
         document.getElementById("GetPersonInfo").innerHTML = result;
-    });
-
+    }).catch(error => { throw error; /* JSON.stringify(error); */ });
 };

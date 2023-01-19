@@ -1,14 +1,11 @@
-const electron = require('electron');
+const path = require('path');
+const { app, BrowserWindow, ipcMain } = require('electron');
 
-var version = process.argv[1].replace('--', '');
+/** ELECTRON SETUP */
 
-// Module to control application life.
-const app = electron.app;
-// Module to create native browser window.
-const BrowserWindow = electron.BrowserWindow;
+const version = process.argv[1].replace('--', '');
 
-
-// Keep a global reference of the window object, if you don't, the window will
+// Keep a global reference of the window object. If you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
@@ -17,18 +14,16 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     width: 1052,
     height: 600,
-    webPreferences:{
-      nodeIntegration: true,
-      nodeIntegrationInWorker: true,
-      contextIsolation: false
-    }
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+    },
   });
 
   // and load the index.html of the app.
-  mainWindow.loadURL(`file://${__dirname}/index.html?version=${version}`);
+  mainWindow.loadURL(`file://${__dirname}/index.html?version=${version}&electron-version=${process.versions.electron}`);
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -39,11 +34,6 @@ function createWindow () {
   })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
-
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
   // On OS X it is common for applications and their menu bar
@@ -53,13 +43,90 @@ app.on('window-all-closed', function () {
   //}
 });
 
-app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createWindow()
-  }
+/** EDGE SETUP */
+
+const namespace = 'QuickStart.' + version.charAt(0).toUpperCase() + version.substr(1);
+
+const baseNetAppPath = path.join(__dirname, '/src/'+ namespace +'/bin/Debug/net7.0');
+
+process.env.EDGE_USE_CORECLR = 1;
+if(version !== 'standard')
+    process.env.EDGE_APP_ROOT = baseNetAppPath;
+
+const edge = require('electron-edge-js');
+
+const baseDll = path.join(baseNetAppPath, namespace + '.dll');
+
+const localTypeName = namespace + '.LocalMethods';
+const externalTypeName = namespace + '.ExternalMethods';
+
+const getAppDomainDirectory = edge.func({
+    assemblyFile: baseDll,
+    typeName: localTypeName,
+    methodName: 'GetAppDomainDirectory'
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+const getCurrentTime = edge.func({
+    assemblyFile: baseDll,
+    typeName: localTypeName,
+    methodName: 'GetCurrentTime'
+});
+
+const useDynamicInput = edge.func({
+    assemblyFile: baseDll,
+    typeName: localTypeName,
+    methodName: 'UseDynamicInput'
+});
+
+const getPerson = edge.func({
+    assemblyFile: baseDll,
+    typeName: externalTypeName,
+    methodName: 'GetPersonInfo'
+});
+
+const handleException = edge.func({
+    assemblyFile: baseDll,
+    typeName: localTypeName,
+    methodName: 'ThrowException'
+});
+
+/**
+ * Invokes an edge method
+ * @param {string} classMethod Class name and method to call in dot notation like ClassName.Method
+ * @param  {...any} args arguments to pass into the method
+ * @returns Promise that resolves with the return from the called method
+ */
+async function invoke(classMethod, ...args) {
+  console.log(classMethod, args);
+    return 'stuff';
+}
+
+/** IPC HANDLING SETUP */
+
+/** Map from ipc channel to handler function */
+const ipcHandlers = {
+  'electronAPI.edge.invoke': (event, classMethod, ...args) => invoke(classMethod, ...args),
+    /* 'ipc-scripture:getScriptureBook': (
+        event,
+        shortName,
+        bookNum,
+    ) => handleGetScriptureBook(event, 'json', shortName, bookNum),
+    'ipc-webserver:getStartTime': handleGetStartTime, */
+};
+
+//app.enableSandbox();
+app.whenReady()
+    .then(() => {
+        // Set up ipc handlers
+        Object.keys(ipcHandlers).forEach((ipcHandle) =>
+            ipcMain.handle(ipcHandle, ipcHandlers[ipcHandle]),
+        );
+
+        createWindow();
+        app.on('activate', () => {
+            // On macOS it's common to re-create a window in the app when the
+            // dock icon is clicked and there are no other windows open.
+            if (mainWindow === null) createWindow();
+        });
+    })
+    .catch(console.log);

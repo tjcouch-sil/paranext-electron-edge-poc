@@ -2,16 +2,15 @@
 <html>
   <head>
         <script>
-            var version = location.search.split('version=')[1];
-            var electronVersion = process.versions.electron;
+            const params = (new URL(document.location)).searchParams;
+            let version = params.get('version');
+            const electronVersion = params.get('electron-version');
             version = version.charAt(0).toUpperCase() + version.substr(1)
-            var namespace = 'QuickStart.' + version + '.dll';
+            const namespace = 'QuickStart.' + version + '.dll';
         </script>
     <meta charset="UTF-8">
     <title>electron-edge-js Quick Start</title>
-    <script>
-        require('./renderer.js')
-    </script>
+    <script src="./renderer.js" defer></script>
       <link rel="stylesheet" href="default.css">
   </head>
   <body>
