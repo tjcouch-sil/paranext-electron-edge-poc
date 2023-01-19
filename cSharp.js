@@ -5,7 +5,7 @@
  * @returns Promise that resolves with the return from the called method
  */
 async function invoke(classMethod, ...args) {
-    return window.electronAPI.edge.invoke(classMethod, ...args);
+  return window.electronAPI.edge.invoke(classMethod, ...args);
 }
 
 module.exports = { invoke };
