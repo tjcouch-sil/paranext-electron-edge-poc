@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace QuickStart.Core
@@ -23,6 +24,22 @@ namespace QuickStart.Core
         public async Task<object> ThrowException(dynamic input)
         {
             throw new Exception("Sample Exception");
+        }
+
+        public async Task<object> LongAsyncMethod(dynamic input)
+        {
+            Console.WriteLine("LongAsyncMethod Start!");
+            await Task.Delay(3000);
+            Console.WriteLine("LongAsyncMethod Done Delaying!");
+            return "LongAsyncMethod finished";
+        }
+
+        public async Task<object> LongBlockingMethod(dynamic input)
+        {
+            Console.WriteLine("LongBlockingMethod Start!");
+            Thread.Sleep(3000);
+            Console.WriteLine("LongBlockingMethod Done Sleeping!");
+            return "LongBlockingMethod finished";
         }
     }
 }

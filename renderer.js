@@ -13,7 +13,7 @@ const cSharp = { invoke };
 
 console.log("stuff");
 
-window.onload = function () {
+document.addEventListener("DOMContentLoaded", function () {
   cSharp
     .invoke("LocalMethods.GetAppDomainDirectory")
     .then((result) => {
@@ -60,4 +60,22 @@ window.onload = function () {
     .catch((error) => {
       throw error; /* JSON.stringify(error); */
     });
-};
+
+  // Attach handler for LongAsyncMethod
+  document
+    .getElementById("LongAsyncMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.LongAsyncMethod")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for LongBlockingMethod
+  document
+    .getElementById("LongBlockingMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.LongBlockingMethod")
+        .then((result) => console.log(result))
+    );
+});

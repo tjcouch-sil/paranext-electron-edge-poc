@@ -3,8 +3,10 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 
 /** ELECTRON SETUP */
 
-const versionArg = process.argv.find((argv) => argv.startsWith("--dotnetversion="));
-const version = versionArg?.replace("--dotnetversion=", "") || '';
+const versionArg = process.argv.find((argv) =>
+  argv.startsWith("--dotnetversion=")
+);
+const version = versionArg?.replace("--dotnetversion=", "") || "";
 
 // Keep a global reference of the window object. If you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -63,41 +65,6 @@ const edge = require("electron-edge-js");
 
 const baseDll = path.join(baseNetAppPath, namespace + ".dll");
 
-const localTypeName = namespace + ".LocalMethods";
-const externalTypeName = namespace + ".ExternalMethods";
-
-const getAppDomainDirectory = edge.func({
-  assemblyFile: baseDll,
-  typeName: localTypeName,
-  methodName: "GetAppDomainDirectory",
-});
-
-console.log('GetAppDomainDirectory', getAppDomainDirectory('', true))
-
-const getCurrentTime = edge.func({
-  assemblyFile: baseDll,
-  typeName: localTypeName,
-  methodName: "GetCurrentTime",
-});
-
-const useDynamicInput = edge.func({
-  assemblyFile: baseDll,
-  typeName: localTypeName,
-  methodName: "UseDynamicInput",
-});
-
-const getPerson = edge.func({
-  assemblyFile: baseDll,
-  typeName: externalTypeName,
-  methodName: "GetPersonInfo",
-});
-
-const handleException = edge.func({
-  assemblyFile: baseDll,
-  typeName: localTypeName,
-  methodName: "ThrowException",
-});
-
 /** Map of generated and wrapped edge functions to call on invoking edge functions */
 const edgeFuncs = new Map();
 
@@ -121,14 +88,16 @@ function createEdgeFunc(ns, className, method) {
       try {
         edgeFunc(args, (error, result) => {
           if (error) {
-            console.log('Error in callback!', error);
+            console.error(
+              "Error in callback! Under what conditions does this occur?",
+              error
+            );
             reject(error);
           }
           resolve(result);
         });
       } catch (e) {
         // C# exceptions are caught here
-        console.log('Error in catch!', e)
         reject(e);
       }
     });
@@ -169,6 +138,16 @@ async function invoke(classMethod, args) {
     // Didn't find an edgeFunc, so create one
     edgeFunc = createEdgeFunc(ns, className, method);
     edgeFuncs.set(fullClassMethod, edgeFunc);
+  }
+
+  if (method === "LongAsyncMethod" || method === "LongBlockingMethod") {
+    console.log(`${method} about to invoke`);
+    const edgeFuncPromise = edgeFunc(args).then((result) => {
+      console.log(`${method} finished and promise resolved`);
+      return result;
+    });
+    console.log(`${method} invoking finished`);
+    return edgeFuncPromise;
   }
 
   return edgeFunc(args);
