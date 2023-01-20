@@ -1,6 +1,11 @@
 # paranext-electron-edge-poc
 Proof of concept to run C# from Electron for Paranext
 
+To run:
+1. Install Node dependencies with `npm install`
+2. [First time running] Run `npm start` (or launch 'Build sln and Debug' in VS Code) to build the QuickStart.sln and run the Electron app
+3. [After the first run] Run `npm run start:core` (or launch 'Debug Electron App' in VS Code) to run the Electron app without building the QuickStart.sln
+
 From Quick start for `electron-edge-js`  https://github.com/agracio/electron-edge-js
 ================
 

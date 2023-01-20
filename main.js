@@ -3,7 +3,8 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 
 /** ELECTRON SETUP */
 
-const version = process.argv[1].replace("--", "");
+const versionArg = process.argv.find((argv) => argv.startsWith("--dotnetversion="));
+const version = versionArg?.replace("--dotnetversion=", "") || '';
 
 // Keep a global reference of the window object. If you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -71,6 +72,8 @@ const getAppDomainDirectory = edge.func({
   methodName: "GetAppDomainDirectory",
 });
 
+console.log('GetAppDomainDirectory', getAppDomainDirectory('', true))
+
 const getCurrentTime = edge.func({
   assemblyFile: baseDll,
   typeName: localTypeName,
@@ -95,29 +98,88 @@ const handleException = edge.func({
   methodName: "ThrowException",
 });
 
+/** Map of generated and wrapped edge functions to call on invoking edge functions */
+const edgeFuncs = new Map();
+
+/**
+ * Creates an edge function that asynchronously calls C# and returns a promise
+ * @param {string} ns namespace for edge function
+ * @param {string} className class name for edge function
+ * @param {string} method method name for edge function
+ * @returns promise that resolves with the results of the edge function call and rejects on exceptions
+ */
+function createEdgeFunc(ns, className, method) {
+  // Load up an edge function with the specs provided
+  const edgeFunc = edge.func({
+    assemblyFile: baseDll,
+    typeName: `${ns}.${className}`,
+    methodName: method,
+  });
+  // Wrap the edge function in a promise function
+  return (args) => {
+    return new Promise((resolve, reject) => {
+      try {
+        edgeFunc(args, (error, result) => {
+          if (error) {
+            console.log('Error in callback!', error);
+            reject(error);
+          }
+          resolve(result);
+        });
+      } catch (e) {
+        // C# exceptions are caught here
+        console.log('Error in catch!', e)
+        reject(e);
+      }
+    });
+  };
+}
+
 /**
  * Invokes an edge method
  * @param {string} classMethod Class name and method to call in dot notation like ClassName.Method
- * @param  {...any} args arguments to pass into the method
+ * @param  {any} args arguments to pass into the method
  * @returns Promise that resolves with the return from the called method
  */
-async function invoke(classMethod, ...args) {
-  console.log(classMethod, args);
-  return "stuff";
+async function invoke(classMethod, args) {
+  if (!classMethod) throw Error("No method provided");
+
+  const addressParts = classMethod.split(".", 3);
+  if (addressParts.length < 2)
+    throw Error("Must provide class and method like Class.Method");
+
+  // Namespace has a default, but the classMethod can provide one if desired
+  let ns = namespace;
+  let className = "";
+  let method = "";
+  // Namespace provided
+  if (addressParts.length === 3) {
+    [ns, className, method] = addressParts;
+  } else {
+    [className, method] = addressParts;
+  }
+
+  // fully specified namespace, class, and method
+  const fullClassMethod = `${ns}.${className}.${method}`;
+
+  // See if we can find an existing edgefunc for this Namespace.Class.Method
+  let edgeFunc = edgeFuncs.get(fullClassMethod);
+
+  if (!edgeFunc) {
+    // Didn't find an edgeFunc, so create one
+    edgeFunc = createEdgeFunc(ns, className, method);
+    edgeFuncs.set(fullClassMethod, edgeFunc);
+  }
+
+  return edgeFunc(args);
 }
 
 /** IPC HANDLING SETUP */
 
 /** Map from ipc channel to handler function */
 const ipcHandlers = {
-  "electronAPI.edge.invoke": (event, classMethod, ...args) =>
-    invoke(classMethod, ...args),
-  /* 'ipc-scripture:getScriptureBook': (
-        event,
-        shortName,
-        bookNum,
-    ) => handleGetScriptureBook(event, 'json', shortName, bookNum),
-    'ipc-webserver:getStartTime': handleGetStartTime, */
+  "electronAPI.edge.invoke": (event, classMethod, args) =>
+    invoke(classMethod, args),
 };
 
 //app.enableSandbox();

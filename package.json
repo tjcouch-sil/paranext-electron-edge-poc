@@ -1,15 +1,15 @@
 {
-  "name": "electron-edge-js-quick-start",
+  "name": "paranext-electron-edge-poc",
   "version": "1.0.0",
-  "description": "A minimal Electron application using `electron-edge-js` with .NET",
+  "description": "Proof of concept to run C# from Electron for Paranext",
   "main": "main.js",
   "scripts": {
-    "start": "electron --core .",
-    "start:core": "electron --core .",
-    "start:standard": "electron --standard .",
-    "start:native": "electron --native ."
+    "start": "dotnet build src/QuickStart.sln && electron --dotnetversion=core .",
+    "start:core": "electron --dotnetversion=core .",
+    "start:standard": "electron --dotnetversion=standard .",
+    "start:native": "electron --dotnetversion=native ."
   },
-  "repository": "https://github.com/agracio/electron-edge-js-quick-start",
+  "repository": "https://github.com/tjcouch-sil/paranext-electron-edge-poc",
   "keywords": [
     "Electron",
     "quick",
