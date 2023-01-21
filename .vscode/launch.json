@@ -12,7 +12,13 @@
             "type": "node-terminal"
         },
         {
-            "name": "Debug Electron App",
+            "command": "npm run start:core",
+            "name": "Debug Electron App (Full Log)",
+            "request": "launch",
+            "type": "node-terminal"
+        },
+        {
+            "name": "Debug Electron App (Fast)",
             "program": "${workspaceFolder}/main.js",
             "request": "launch",
             "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",

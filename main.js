@@ -1,6 +1,28 @@
 const path = require("path");
 const { app, BrowserWindow, ipcMain } = require("electron");
 
+/**
+ * Block the current process's execution for the given number of milliseconds
+ * WARNING: THIS FUNCTION IS VERY VERY BAD PRACTICE AND SHOULD NEVER BE USED IN PRODUCTION CODE
+ * @param {number} ms number of milliseconds during which to block the process
+ */
+function blockProcess(ms) {
+  ms += new Date().getTime();
+  while (new Date() < ms) {}
+}
+
+/**
+ * Block the current process's execution for the given number of milliseconds
+ * WARNING: THIS FUNCTION IS VERY VERY BAD PRACTICE AND SHOULD NEVER BE USED IN PRODUCTION CODE
+ * @param {number} ms number of milliseconds during which to block the process
+ */
+function blockProcessAsync(ms) {
+  return new Promise((resolve) => {
+    blockProcess(ms);
+    resolve();
+  });
+}
+
 /** ELECTRON SETUP */
 
 const versionArg = process.argv.find((argv) =>
@@ -21,6 +43,8 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
+  mainWindow.maximize();
 
   // and load the index.html of the app.
   mainWindow.loadURL(
@@ -66,7 +90,42 @@ const edge = require("electron-edge-js");
 const baseDll = path.join(baseNetAppPath, namespace + ".dll");
 
 /** Map of generated and wrapped edge functions to call on invoking edge functions */
-const edgeFuncs = new Map();
+const edgeFuncs = new Map([
+  [
+    `${namespace}.LocalMethods.LongAsyncElectronMethod`,
+    async () => {
+      console.log("LongAsyncElectronMethod Start!");
+      await new Promise((resolve) => {
+        setTimeout(() => resolve(), 2000);
+      });
+      console.log("LongAsyncElectronMethod Done Delaying!");
+      return "LongAsyncElectronMethod finished";
+    },
+  ],
+  [
+    `${namespace}.LocalMethods.LongBlockingElectronMethod`,
+    async () => {
+      console.log("LongBlockingElectronMethod Start!");
+      blockProcessAsync(2000);
+      console.log("LongBlockingElectronMethod Done Sleeping!");
+      return "LongBlockingElectronMethod finished";
+    },
+  ],
+  [
+    `${namespace}.LocalMethods.ShortAsynchronousElectronMethod`,
+    async () => {
+      console.log("ShortAsynchronousElectronMethod called!");
+      return "ShortAsynchronousElectronMethod finished";
+    },
+  ],
+  [
+    `${namespace}.LocalMethods.ShortSynchronousElectronMethod`,
+    () => {
+      console.log("ShortSynchronousElectronMethod called!");
+      return "ShortSynchronousElectronMethod finished";
+    },
+  ],
+]);
 
 /**
  * Creates an edge function that asynchronously calls C# and returns a promise
@@ -76,14 +135,17 @@ const edgeFuncs = new Map();
  * @returns promise that resolves with the results of the edge function call and rejects on exceptions
  */
 function createEdgeFunc(ns, className, method) {
+  const methodForceSynced = method.endsWith("Synced");
   // Load up an edge function with the specs provided
   const edgeFunc = edge.func({
     assemblyFile: baseDll,
     typeName: `${ns}.${className}`,
-    methodName: method,
+    methodName: methodForceSynced ? method.replace("Synced", "") : method,
   });
   // Wrap the edge function in a promise function
   return (args) => {
+    if (methodForceSynced) return edgeFunc(args, true);
+
     return new Promise((resolve, reject) => {
       try {
         edgeFunc(args, (error, result) => {
@@ -140,8 +202,15 @@ async function invoke(classMethod, args) {
     edgeFuncs.set(fullClassMethod, edgeFunc);
   }
 
-  if (method === "LongAsyncMethod" || method === "LongBlockingMethod") {
-    console.log(`${method} about to invoke`);
+  if (
+    method === "ShortAsynchronousMethod" ||
+    method === "ShortAsynchronousElectronMethod" ||
+    method === "LongAsyncMethod" ||
+    method === "LongAsyncElectronMethod" ||
+    method === "LongBlockingMethod" ||
+    method === "LongBlockingElectronMethod"
+  ) {
+    console.log(`---\n${method} about to invoke`);
     const edgeFuncPromise = edgeFunc(args).then((result) => {
       console.log(`${method} finished and promise resolved`);
       return result;

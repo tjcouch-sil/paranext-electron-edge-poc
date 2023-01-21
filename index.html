@@ -79,8 +79,62 @@
         <td><pre id="GetPersonInfo"></pre></td>
       </tr>
     </table>
-    <button id="LongAsyncMethod" type="button">Long Async Method</button>
+    Using electron-edge-js, the C# code performs nearly exactly the same way that the
+    Node code performs. The C# code performs almost just as if it were Electron main
+    process code.<!-- All constraints in place on the Electron main process are also in
+    place in the C# code. -->
     <br />
-    <button id="LongBlockingMethod" type="button">Long Blocking Method</button>
+    <br />
+    There are only two additional constraints applied to the C# code that are not
+      present for the Electron main process code:
+    <ol>
+      <li>The C# code must always accept one and only one 'dynamic' argument and return
+        a Task&lt;object&gt;. This means the C# code can never be written fully
+        synchronously. This does not have any serious impact on the code from what I
+        can tell. You just have to put async on the signature of every C# method called
+        from edge.</li>
+      <li>The Electron main process code cannot determine if a C# method should be
+        called with the synchronous Edge function call
+        <code>edgeFunc(args, true): any</code> or with the asynchronous Edge function
+        call <code>edgeFunc(args, (error, result) => void): void</code>. There must be
+        some programmatic way to determine which Edge function call to use. The easiest
+        way to deal with this issue is calling all Edge functions asynchronously! Or
+        you can use a keyword in the namespace, class, or method name like "Sync" and
+        detect that when calling the Edge function. Or you can list all synchronous C#
+        methods in an array and check if the method is in that array when calling the
+        Edge function.</li>
+    </ol>
+    Following are some example Edge functions and what they demonstrate:
+    <br />
+    <br />
+    <button id="ShortAsynchronousElectronMethod" type="button">Short Asynchronous Electron Method</button> Calling a short asynchronous Electron method (with no actual asynchronous operations) does not appear to hold up the renderer as it its execution time is very short.
+    <br />
+    <button id="ShortAsynchronousMethod" type="button">Short Asynchronous C# Method</button> Calling a short asynchronous C# method (with no actual asynchronous operations) is just like calling a short asynchronous Electron method. Its execution does not appear to hold up the renderer.
+    <br />
+    ---
+    <br />
+    <button id="ShortSynchronousElectronMethod" type="button">Short Synchronous Electron Method</button> Calling a short synchronous Electron method does not appear to hold up the renderer as its execution time is very short.
+    <br />
+    <button id="ShortAsynchronousMethodSynced" type="button">Short Asynchronous C# Method Force Synced</button> Calling a short asynchronous C# method with the synchronous Edge function call is just like calling a short synchronous Electron method. Its execution does not appear to hold up the renderer.
+    <br />
+    <button id="ShortSynchronousMethod" type="button">Short Synchronous C# Method</button> Calling synchronous C# methods does not work as they do not return a Task&lt;object&gt;.
+    <br />
+    ---
+    <br />
+    <button id="LongAsyncElectronMethod" type="button">Long Async Electron Method</button> Calling a long asynchronous Electron method that awaits asynchronous operations does not appear to hold up the renderer as it waits for the scheduler to run it and its actual execution time is very short.
+    <br />
+    <button id="LongAsyncMethod" type="button">Long Async C# Method</button> Calling a long asynchronous C# method that awaits asynchronous operations is just like calling a long asynchronous Electron method. It does not appear to hold up the renderer.
+    <br />
+    ---
+    <br />
+    <button id="LongBlockingElectronMethod" type="button">Long Blocking Async Electron Method</button> Calling a long asynchronous Electron method that blocks the process does hold up the renderer as its actual execution time is very long. This is somewhat strange to me as I would expect that blocking the main process would not block the renderer process.
+    <br />
+    <button id="LongBlockingMethod" type="button">Long Blocking Async C# Method</button> Calling a long asynchronous C# method that blocks the process as in the reported <a href="https://github.com/agracio/electron-edge-js/issues/97" target="_blank" >issue #97</a> is just like calling a long blocking asynchronous Electron method. It does hold up the renderer.
+    <br />
+    ---
+    <br />
+    <button id="LongAsyncMethodSynced" type="button">Long Async C# Method Force Synced</button> Calling a long asynchronous C# method that awaits asynchronous operations with the synchronous Edge function call does not work as Edge detects that its Task&lt;object&gt; has not completed in the synchronous execution time.
+    <br />
+    <button id="LongBlockingMethodSynced" type="button">Long Blocking C# Method Force Synced</button> Calling a long synchronous C# method that blocks the process with the synchronous Edge function call works as Edge detects that its Task&lt;object&gt; has completed in the synchronous execution time. As seen above in the blocking asynchronous call, it does hold up the renderer.
   </body>
 </html>

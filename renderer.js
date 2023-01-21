@@ -61,6 +61,42 @@ document.addEventListener("DOMContentLoaded", function () {
       throw error; /* JSON.stringify(error); */
     });
 
+  // Attach handler for ShortAsynchronousMethod
+  document
+    .getElementById("ShortAsynchronousMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.ShortAsynchronousMethod")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for ShortAsynchronousElectronMethod
+  document
+    .getElementById("ShortAsynchronousElectronMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.ShortAsynchronousElectronMethod")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for ShortSynchronousMethod
+  document
+    .getElementById("ShortSynchronousMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.ShortSynchronousMethod")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for ShortSynchronousElectronMethod
+  document
+    .getElementById("ShortSynchronousElectronMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.ShortSynchronousElectronMethod")
+        .then((result) => console.log(result))
+    );
+
   // Attach handler for LongAsyncMethod
   document
     .getElementById("LongAsyncMethod")
@@ -70,12 +106,57 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((result) => console.log(result))
     );
 
+  // Attach handler for LongAsyncMethod
+  document
+    .getElementById("LongAsyncElectronMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.LongAsyncElectronMethod")
+        .then((result) => console.log(result))
+    );
+
   // Attach handler for LongBlockingMethod
   document
     .getElementById("LongBlockingMethod")
     .addEventListener("click", () =>
       cSharp
         .invoke("LocalMethods.LongBlockingMethod")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for LongBlockingElectronMethod
+  document
+    .getElementById("LongBlockingElectronMethod")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.LongBlockingElectronMethod")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for ShortAsynchronousMethodSynced
+  document
+    .getElementById("ShortAsynchronousMethodSynced")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.ShortAsynchronousMethodSynced")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for LongAsyncMethodSynced
+  document
+    .getElementById("LongAsyncMethodSynced")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.LongAsyncMethodSynced")
+        .then((result) => console.log(result))
+    );
+
+  // Attach handler for LongBlockingMethodSynced
+  document
+    .getElementById("LongBlockingMethodSynced")
+    .addEventListener("click", () =>
+      cSharp
+        .invoke("LocalMethods.LongBlockingMethodSynced")
         .then((result) => console.log(result))
     );
 });
