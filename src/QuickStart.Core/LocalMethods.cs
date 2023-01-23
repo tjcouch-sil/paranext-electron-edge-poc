@@ -6,19 +6,31 @@ namespace QuickStart.Core
 {
     public class LocalMethods
     {
+        private static int timesCalled = 0;
+
+        public LocalMethods()
+        {
+            Console.WriteLine("Default constructor run for LocalMethods!");
+        }
+
+        private string GetTimesCalled()
+        {
+            return " Times called: " + ++timesCalled;
+        }
+
         public async Task<object> GetAppDomainDirectory(dynamic input)
         {
-            return AppDomain.CurrentDomain.BaseDirectory;
+            return AppDomain.CurrentDomain.BaseDirectory + GetTimesCalled();
         }
 
         public async Task<object> GetCurrentTime(dynamic input)
         {
-            return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + GetTimesCalled();
         }
 
         public async Task<object> UseDynamicInput(dynamic input)
         {
-            return $".NET Core welcomes {input}";
+            return $".NET Core welcomes {input}" + GetTimesCalled();
         }
 
         public async Task<object> ThrowException(dynamic input)
@@ -29,13 +41,13 @@ namespace QuickStart.Core
         public async Task<object> ShortAsynchronousMethod(dynamic input)
         {
             Console.WriteLine("ShortAsynchronousMethod called!");
-            return "ShortAsynchronousMethod finished";
+            return "ShortAsynchronousMethod finished" + GetTimesCalled();
         }
 
         public object ShortSynchronousMethod(dynamic input)
         {
             Console.WriteLine("ShortSynchronousMethod called!");
-            return "ShortSynchronousMethod finished";
+            return "ShortSynchronousMethod finished" + GetTimesCalled();
         }
 
         public async Task<object> LongAsyncMethod(dynamic input)
@@ -43,7 +55,7 @@ namespace QuickStart.Core
             Console.WriteLine("LongAsyncMethod Start!");
             await Task.Delay(2000);
             Console.WriteLine("LongAsyncMethod Done Delaying!");
-            return "LongAsyncMethod finished";
+            return "LongAsyncMethod finished" + GetTimesCalled();
         }
 
         public async Task<object> LongBlockingMethod(dynamic input)
@@ -51,7 +63,7 @@ namespace QuickStart.Core
             Console.WriteLine("LongBlockingMethod Start!");
             Thread.Sleep(2000);
             Console.WriteLine("LongBlockingMethod Done Sleeping!");
-            return "LongBlockingMethod finished";
+            return "LongBlockingMethod finished" + GetTimesCalled();
         }
     }
 }

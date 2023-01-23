@@ -13,6 +13,10 @@ const cSharp = { invoke };
 
 console.log("stuff");
 
+function print(input) {
+  console.log(input);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   cSharp
     .invoke("LocalMethods.GetAppDomainDirectory")
@@ -62,13 +66,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
   // Attach handler for ShortAsynchronousMethod
-  document
-    .getElementById("ShortAsynchronousMethod")
-    .addEventListener("click", () =>
-      cSharp
-        .invoke("LocalMethods.ShortAsynchronousMethod")
-        .then((result) => console.log(result))
-    );
+  const asyncButton = document.getElementById("ShortAsynchronousMethod");
+  asyncButton.addEventListener("click", () =>
+    cSharp.invoke("LocalMethods.ShortAsynchronousMethod").then(print)
+  );
+  asyncButton.addEventListener("contextmenu", () => {
+    for (let i = 0; i < 10000; i += 1)
+      cSharp.invoke("LocalMethods.ShortAsynchronousMethod").then(print);
+  });
 
   // Attach handler for ShortAsynchronousElectronMethod
   document
